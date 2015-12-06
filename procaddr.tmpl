@@ -76,7 +76,7 @@ import "C"
 
 import "unsafe"
 
-func getProcAddress(namea string) unsafe.Pointer {
+func getProcAddr(namea string) unsafe.Pointer {
 	cname := C.CString(namea)
 	defer C.free(unsafe.Pointer(cname))
 	return C.GlowGetProcAddress(cname)

@@ -11,10 +11,10 @@
 // Package {{.Name}} implements Go bindings to OpenGL.
 //
 // This package was automatically generated using Glow:
-//  http://github.com/go-gl/glow
+// 	http://github.com/go-gl/glow
 //
 // Generated based on the OpenGL XML specification:
-//  SVN revision {{.SpecRev}}
+// 	SVN revision {{.SpecRev}}
 package {{.Name}}
 //glow:rmspace
 
@@ -52,7 +52,7 @@ package {{.Name}}
 // {{if .HasDebugCallbackFeature}}
 // extern void glowDebugCallback_{{.UniqueName}}(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam);
 // static void APIENTRY glowCDebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
-//   glowDebugCallback_{{.UniqueName}}(source, type, id, severity, length, message, userParam);
+// 	glowDebugCallback_{{.UniqueName}}(source, type, id, severity, length, message, userParam);
 // }
 // {{end}}
 //
@@ -62,28 +62,27 @@ package {{.Name}}
 //
 // {{range .Functions}}
 // static {{.Return.CType}} glow{{.GoName}}(GP{{toUpper .GoName}} fnptr{{if ge (len .Parameters) 1}}, {{end}}{{template "paramsCDecl" .Parameters}}) {
-//   {{if not .Return.IsVoid}}return {{end}}(*fnptr)({{template "paramsCCall" .Parameters}});
+// 	{{if not .Return.IsVoid}}return {{end}}(*fnptr)({{template "paramsCCall" .Parameters}});
 // }
 // {{end}}
 //
 import "C"
 import (
-  {{if .HasRequiredFunctions}}
-  "errors"
-  {{end}}
-  "unsafe"
+	{{if .HasRequiredFunctions}}
+	{{end}}
+	"unsafe"
 )
 
 const (
-  {{range .Enums}}
-  {{.GoName}} = {{.Value}}
-  {{end}}
+	{{range .Enums}}
+	{{.GoName}} = {{.Value}}
+	{{end}}
 )
 
 var (
-  {{range .Functions}}
-  gp{{.GoName}} C.GP{{toUpper .GoName}}
-  {{end}}
+	{{range .Functions}}
+	gp{{.GoName}} C.GP{{toUpper .GoName}}
+	{{end}}
 )
 
 // Helper functions
@@ -96,32 +95,20 @@ func boolToInt(b bool) int {
 {{range .Functions}}
 {{with .Doc}}// {{.}}{{end}}
 func {{.GoName}}({{template "paramsGoDecl" .Parameters}}){{if not .Return.IsVoid}} {{.Return.GoType}}{{end}} {
-  {{range .Parameters}}
-  {{if .Type.IsDebugProc}}userDebugCallback = {{.GoName}}{{end}}
-  {{end}}
-  {{if .Return.IsVoid}}{{template "bridgeCall" .}}
-  {{else}}
-  ret := {{template "bridgeCall" .}}
-  return {{.Return.ConvertCToGo "ret"}}
-  {{end}}
+	if gp{{.GoName}} == nil {
+		gp{{.GoName}} = (C.GP{{toUpper .GoName}})(getProcAddr("{{.Name}}"))
+		if gp{{.GoName}} == nil {
+			{{if .Required}}panic("error: failed to loading {{else}}println("warning: failed to loading {{end}}{{.Name}}")
+		}
+	}
+
+	{{range .Parameters}}
+	{{if .Type.IsDebugProc}}userDebugCallback = {{.GoName}}{{end}}
+	{{end}}
+	{{if .Return.IsVoid}}{{template "bridgeCall" .}}
+	{{else}}
+	ret := {{template "bridgeCall" .}}
+	return {{.Return.ConvertCToGo "ret"}}
+	{{end}}
 }
 {{end}}
-
-func Init() error {
-  return InitWithProcAddrFunc(getProcAddress)
-}
-
-// InitWithProcAddrFunc intializes the package using the specified OpenGL
-// function pointer loading function. For more cases Init should be used
-// instead.
-func InitWithProcAddrFunc(getProcAddr func(name string) unsafe.Pointer) error {
-  {{range .Functions}}
-  gp{{.GoName}} = (C.GP{{toUpper .GoName}})(getProcAddr("{{.Name}}"))
-  {{if .Required}}
-  if gp{{.GoName}} == nil {
-    return errors.New("{{.Name}}")
-  }
-  {{end}}
-  {{end}}
-	return nil
-}
